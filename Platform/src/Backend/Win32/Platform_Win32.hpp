@@ -3,6 +3,7 @@
 #include "IPlatform.hpp"
 #include "IWindow.hpp"
 #include "IContext.hpp"
+#include "IFileWatcher.hpp"
 
 namespace Platform::Backend::Win32
 {

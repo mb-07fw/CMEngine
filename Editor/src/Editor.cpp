@@ -56,6 +56,21 @@ namespace Editor
         m_InputLayout = factory.CreateInputLayout();
         m_VertexBuffer = factory.CreateVertexBuffer(Platform::BufferPolicy::Default);
 
+       /* {
+            Platform::String ssoTest = Platform::StringView("Hola!!!!!!!!!!!!");
+
+            std::cout << "Active: " << ssoTest.Data() << '\n';
+
+            Platform::String heapTest = "this-is-not-small";
+            heapTest += "!!";
+
+            std::cout << "Active: " << heapTest.Data() << '\n';
+
+            heapTest += "_and-not-smart!!!";
+
+            std::cout << "Active: " << heapTest.Data() << '\n';
+        }*/
+
         constexpr uint32_t SemanticIndex = 0;
         constexpr uint32_t VBufferSlot = 0;
 

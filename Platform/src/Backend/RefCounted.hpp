@@ -18,7 +18,7 @@ namespace Platform::Backend
         /* This literally has no meaning. It just needs to be unique.
          * Ves. this is evil... but it's also really funny.
          * Obviously this doesn't prevent any misuse, its more like a contraceptive. */
-        static constexpr uint32_t S_SuperSecretSpecialRefCountOpKey = ((2 * 16) << 26) + 43;
+        static constexpr uint32_t S_SuperSecretSpecialRefCountOpKey = (static_cast<uint32_t>(2ul * 16ul) << 26ul) + 43ul;
 
         RefCounted() = default;
         virtual ~RefCounted() = default;

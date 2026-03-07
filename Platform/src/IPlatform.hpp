@@ -12,13 +12,9 @@ namespace Platform
     };
 
     /* WARNING: Lifetime of the logger is NOT managed by the platform backend. */
-    [[nodiscard]] ILogger* GetActiveLogger() noexcept;
-    void SetActiveLogger(ILogger* pActiveLogger) noexcept;
-    void ResetActiveLogger() noexcept;
-
-    void LogInfo(const char* pMsg) noexcept;
-    void LogWarning(const char* pMsg) noexcept;
-    void LogFatal(const char* pMsg) noexcept;
+    PLATFORM_API [[nodiscard]] ILogger* GetActiveLogger() noexcept;
+    PLATFORM_API void SetActiveLogger(ILogger* pActiveLogger) noexcept;
+    PLATFORM_API void ResetActiveLogger() noexcept;
 
     class PLATFORM_API IPlatform
     {

@@ -22,13 +22,11 @@ namespace Platform::Backend::Win32::D3D::_11
 		m_Elems.clear();
 		m_Descs.clear();
 
-        m_Elems.assign(elems.begin(), elems.end());
-
-        TranslateElements(m_Elems, m_Descs);
+        TranslateElements(elems, m_Descs);
 
 		::HRESULT hr = pDevice->CreateInputLayout(
 			m_Descs.data(),
-			m_Descs.size(),
+			Cast<::UINT>(m_Descs.size()),
 			pVSBytecodeWithInputSignature->GetBufferPointer(),
 			pVSBytecodeWithInputSignature->GetBufferSize(),
 			&mP_InputLayout
@@ -46,6 +44,7 @@ namespace Platform::Backend::Win32::D3D::_11
         std::vector<::D3D11_INPUT_ELEMENT_DESC>& outDescs
     ) noexcept
     {
+		m_Elems.assign(elems.begin(), elems.end());
 		outDescs.reserve(m_Elems.size());
 
 		uint32_t instanceByteOffset = 0;
@@ -109,16 +108,16 @@ namespace Platform::Backend::Win32::D3D::_11
 	) noexcept
 	{
 		size_t sizeBytes = data.size_bytes();
-		uint32_t startPos = offsetBytes;
 		uint32_t numElems = Cast<uint32_t>(sizeBytes / strideBytes);
-		uint32_t endPos   = offsetBytes + (strideBytes * numElems);
+		uint32_t startPos = offsetBytes;
+		uint32_t endPos   = startPos + (strideBytes * numElems);
 
 		PLATFORM_FAILURE_IF_V(
 			endPos > sizeBytes,
 			"(VertexBuffer) Invalid buffer config: Parameters are set to read beyond "
-			"the scope of the buffer, which is probably not desired. Buffer Size: `{}` "
-			"Offset: `{}`, Elements: `{}`, End Pos (offsetBytes + (numElems * strideBytes): `{}`",
-			sizeBytes, offsetBytes, numElems, endPos
+			"the scope of the buffer, which is probably not desired. BufferSize: `{}` "
+			"NumElements: `{}`, StartPos: `{}`, EndPos (offsetBytes + (numElems * strideBytes): `{}`",
+			sizeBytes, numElems, startPos, endPos
 		);
 
 		PLATFORM_FAILURE_IF_V(

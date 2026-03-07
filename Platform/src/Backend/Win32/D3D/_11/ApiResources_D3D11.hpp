@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Backend/Win32/Resources_Win32.hpp"
+#include "Backend/PlatformFailure.hpp"
 #include "Backend/RefCounted.hpp"
 #include "IApiResources.hpp"
 #include "ImplRefCounted.hpp"
-#include "PlatformFailure.hpp"
 #include "Common/Cast.hpp"
 
 #include <cstdint>
@@ -90,8 +90,6 @@ namespace Platform::Backend::Win32::D3D::_11
     {
         PLATFORM_FAILURE_IF(!pContext, "(Shader_D3D11) Provided context is nullptr.");
         PLATFORM_FAILURE_IF(!mP_Shader, "(Shader_D3D11) Shader interface is nullptr.");
-
-        ::HRESULT hr = S_OK;
 
         if constexpr (std::is_same_v<D3D11Interface, ID3D11VertexShader>)
             pContext->VSSetShader(mP_Shader.Get(), nullptr, 0);
@@ -353,7 +351,7 @@ namespace Platform::Backend::Win32::D3D::_11
             0,
             nullptr,
             data.data(),
-            data.size_bytes(),
+            Cast<::UINT>(data.size_bytes()),
             0
         );
     }

@@ -1,7 +1,7 @@
 #include "Backend/Win32/D3D/_11/Api_D3D11.hpp"
 #include "Backend/Win32/D3D/_11/ApiResources_D3D11.hpp"
+#include "Backend/PlatformFailure.hpp"
 #include "Common/Assert.hpp"
-#include "PlatformFailure.hpp"
 #include "Common/Cast.hpp"
 #include "Common/Config.hpp"
 
@@ -269,6 +269,8 @@ namespace Platform::Backend::Win32::D3D::_11
 
 	void Api::Init(const PlatformSettings& settings, ::HWND hWnd) noexcept
 	{
+		settings.IsGraphicsDebugging;
+
 		PLATFORM_FAILURE_IF(!hWnd, "(Api_D3D11) Provided HWND is nullptr.");
 
 		::DXGI_SWAP_CHAIN_DESC scDesc = {};

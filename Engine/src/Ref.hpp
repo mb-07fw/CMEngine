@@ -11,7 +11,7 @@ namespace Engine
 	private:
 		// this literally has no meaning. It just needs to be unique.
 		// yes... this is evil, but it's also really funny.
-		static constexpr uint32_t S_SuperSecretSpecialRefCountOpKey = ((2 * 16) << 26) + 43;
+		static constexpr uint32_t S_SuperSecretSpecialRefCountOpKey = (static_cast<uint32_t>(2 * 16) << 26ul) + 43ul;
 	public:
 		Ref() = default;
 

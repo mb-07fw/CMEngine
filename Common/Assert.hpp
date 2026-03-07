@@ -5,7 +5,7 @@
 
 #include "Config.hpp"
 
-#if defined(CONFIG_REL_DEBUG) || defined(CONFIG_DEBUG)
+#if !defined(CONFIG_DIST)
     #define ASSERT(x, msg) if (!(x)) \
                             { \
                                 std::cout << "Assertion failed: " << #x << "\n\t| Message: " << msg << '\n'; \

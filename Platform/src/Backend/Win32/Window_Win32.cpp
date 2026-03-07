@@ -1,6 +1,6 @@
 #include "Backend/Win32/Window_Win32.hpp"
 #include "Backend/Win32/PlatformOS_Win32.hpp"
-#include "IPlatform.hpp"
+#include "Backend/Log.hpp"
 #include "Common/Assert.hpp"
 #include "Common/Cast.hpp"
 
@@ -85,7 +85,10 @@ namespace Platform::Backend::Win32
 		wndClass.hInstance = mP_hInstance;
 		wndClass.lpszClassName = S_ClassName.data();
 
-        ASSERT(::RegisterClassExW(&wndClass), "(Window_Win32) Failed to register window class.");
+        ASSERT(
+            ::RegisterClassExW(&wndClass),
+            "(Window_Win32) Failed to register window class."
+        );
 
         constexpr long WindowStyle = WS_OVERLAPPEDWINDOW;
 
@@ -123,9 +126,15 @@ namespace Platform::Backend::Win32
 
     void Window::Shutdown() noexcept
     {
-        ASSERT(::DestroyWindow(mP_hWnd), "(Window_Win32) Failed to destroy window instance.");
+        ASSERT(
+            ::DestroyWindow(mP_hWnd),
+            "(Window_Win32) Failed to destroy window instance."
+        );
         
-        ASSERT(::UnregisterClassW(S_ClassName.data(), mP_hInstance), "(Window_Win32) Failed to unregister the window's class.");
+        ASSERT(
+            ::UnregisterClassW(S_ClassName.data(), mP_hInstance),
+            "(Window_Win32) Failed to unregister the window's class."
+        );
     }
 
     [[nodiscard]] ::LRESULT CALLBACK Window::WndProcSetup(

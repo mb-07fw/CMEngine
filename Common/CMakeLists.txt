@@ -1,15 +1,10 @@
 # Common CMakeLists.txt
 
+# NOTE: Everything wrote in Common is meant to be local to a specific dll-boundary,
+#         and thus not shared across them.
+
 set(Build_Files 
     "Dummy.cpp" # to ensure there is a .lib to link to...
-
-    "Assert.hpp"
-    "Cast.hpp"
-    "Config.hpp"
-    "IBasicLogger.hpp"
-    "Math.hpp"
-    "RuntimeFailure.hpp"
-    "View.hpp"
 )
 
 add_library(Common STATIC ${Build_Files})

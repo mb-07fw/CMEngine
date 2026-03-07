@@ -10,6 +10,8 @@ set(Src_Files
 
     "src/IContext.hpp"
 
+    "src/IFileWatcher.hpp"
+
     "src/ILogger.hpp"
 
     "src/ImplRefCounted.hpp"
@@ -20,17 +22,22 @@ set(Src_Files
 
     "src/IWindow.hpp"
 
-    "src/PlatformFailure.hpp"
-
     "src/Types.cpp"
     "src/Types.hpp"
 
+    "src/Backend/Log.cpp"
+    "src/Backend/Log.hpp"
+
+    "src/Backend/PlatformFailure.hpp"
     "src/Backend/RefCounted.hpp"
 
     "src/Backend/Win32/Platform_Win32.cpp"
     "src/Backend/Win32/Platform_Win32.hpp"
 
     "src/Backend/Win32/Types_Win32.hpp"
+
+    "src/Backend/Win32/Utility_Win32.cpp"
+    "src/Backend/Win32/Utility_Win32.hpp"
 
     "src/Backend/Win32/Window_Win32.cpp"
     "src/Backend/Win32/Window_Win32.hpp"
@@ -54,11 +61,18 @@ set(Src_Files
     "src/Backend/Win32/PlatformFwd_Win32.hpp"
 )
 
+
 set(Inc_Files "include/Platform.hpp")
 
 set(Build_Files ${Src_Files} ${Inc_Files})
 
 add_library(Platform SHARED ${Build_Files})
+
+target_sources(Platform PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/cpp.hint")
+
+set_source_files_properties(cpp.hint
+    PROPERTIES HEADER_FILE_ONLY TRUE
+)
 
 target_include_directories(Platform PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
@@ -69,7 +83,10 @@ target_compile_definitions(Platform
     PRIVATE PLATFORM_BUILD=1
 )
 
-target_link_libraries(Platform PUBLIC Common)
+target_link_libraries(Platform
+    PUBLIC Common
+    PRIVATE efsw
+)
 
 if (WIN32)
     target_link_libraries(Platform PRIVATE

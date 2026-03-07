@@ -2,14 +2,14 @@
 
 set(Src_Files
     "src/Engine.cpp"
-   
+
     "src/Ref.hpp"
 
-    "src/Asset/AssetID.hpp"
     "src/Asset/AssetID.cpp"
+    "src/Asset/AssetID.hpp"
     "src/Asset/Asset.hpp"
-    "src/Asset/AssetManager.hpp"
     "src/Asset/AssetManager.cpp"
+    "src/Asset/AssetManager.hpp"
 )
 
 set(Inc_Files

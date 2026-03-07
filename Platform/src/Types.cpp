@@ -7,181 +7,298 @@
 
 namespace Platform
 {
-    StringView::StringView(const char* pString) noexcept
+    template <typename StringLike>
+    [[nodiscard]] bool StringEqual(const StringLike& lhs, const StringLike& rhs) noexcept
     {
-        constexpr size_t MaximumSize = 1024;
+        if ((lhs.Null() || rhs.Null()) ||
+            lhs.Size() != rhs.Size())
+            return false;
 
-        mP_String = pString;
-        m_Size = strnlen(pString, MaximumSize);
+        return std::memcmp(lhs.Data(), rhs.Data(), lhs.Size()) == 0;
     }
 
-    StringView::StringView(const char* pString, size_t size) noexcept
-        : mP_String(pString),
-          m_Size(size)
+    [[nodiscard]] size_t StringLength(const char* pStr, size_t maxLength = 1024) noexcept
     {
+        return strnlen(pStr, maxLength);
     }
 
-    String::String(const char* pString) noexcept
+    StringView::StringView(const char* pStr) noexcept
     {
-        Assign(pString);
+        if (!pStr)
+            return;
+
+        mP_Str = pStr;
+        m_Size = StringLength(pStr);
+    }
+
+    [[nodiscard]] bool StringView::operator==(const StringView& other) const noexcept
+    {
+        return StringEqual(*this, other);
+    }
+
+    String::String(const char* pStr) noexcept
+    {
+        if (!pStr)
+            return;
+
+        const size_t length = StringLength(pStr);
+
+        if (length < sizeof(m_InlineBuffer))
+        {
+            InlineCopy(pStr, length);
+            return;
+        }
+
+        mP_Str = AllocCapacity(length);
+        m_Capacity = length;
+
+        constexpr size_t Offset = 0;
+        HeapCopyOffset(Offset, pStr, length);
+
+        m_Size = length;
     }
 
     String::String(const StringView& view) noexcept
-        : String(view.Data(), view.Size())
     {
+        Assign(view.Data(), view.Size());
     }
 
-    String::String(const char* pString, size_t size) noexcept
+    String::String() noexcept
     {
-        Alloc(size);
-        CopyRaw(pString);
-    }
-
-    String::String(size_t initialSize, char initialChar) noexcept
-    {
-        Alloc(initialSize);
-
-        /* Set each character of the string to initial value... */
-        std::memset(mP_String, Cast<int>(initialChar), m_Size);
-
-        SetNullTerminator();
     }
 
     String::String(const String& other) noexcept
     {
-        Copy(other);
+        Assign(other);
     }
 
     String::String(String&& other) noexcept
     {
-        Steal(std::move(other));
+        Assign(std::move(other));
+    }
+
+    String& String::operator=(const String& other) noexcept
+    {
+        Assign(other);
+        return *this;
+    }
+
+    String& String::operator=(String&& other) noexcept
+    {
+        Assign(std::move(other));
+        return *this;
+    }
+
+    String& String::operator+=(const char* pStr) noexcept
+    {
+        Append(pStr);
+        return *this;
+    }
+
+    void String::Assign(const char* pStr, size_t length) noexcept
+    {
+        if (IsSmall() && length <= S_MaxSmallCapacity)
+        {
+            InlineCopy(pStr, length);
+            return;
+        }
+
+        if (IsSmall() && length >= S_MaxSmallCapacity)
+        {
+            m_Capacity = length;
+            mP_Str = AllocCapacity(m_Capacity);
+        }
+        else
+            Resize(length);
+
+        HeapCopy(pStr, length);
+    }
+
+    void String::Assign(const String& other) noexcept
+    {
+        if (other.Empty())
+            return;
+
+        if (IsSmall() && other.IsSmall())
+        {
+            InlineCopy(other.m_InlineBuffer, other.Size());
+            return;
+        }
+
+        Resize(other.Capacity());
+        HeapCopy(other.Data(), other.Size());
+    }
+
+    void String::Assign(String&& other) noexcept
+    {
+        if (!IsSmall() && mP_Str)
+            Dealloc();
+
+        if (other.Empty())
+            return;
+
+        if (other.IsSmall())
+        {
+            InlineCopy(other.m_InlineBuffer, other.Size());
+
+            other.m_Size = 0;
+            other.m_InlineBuffer[0] = '\0';
+
+            return;
+        }
+
+        m_Capacity = other.Capacity();
+        m_Size = other.Size();
+        mP_Str = other.mP_Str;
+
+        other.m_Size = 0;
+        other.m_Capacity = S_MaxSmallCapacity;
+        other.mP_Str = nullptr;
+
+        /* Ensure moved from object defaults to initial empty state... */
+        other.m_InlineBuffer[0] = '\0';
+    }
+
+    void String::Append(const char* pStr) noexcept
+    {
+        const size_t appendLength = StringLength(pStr);
+        const size_t prevSize = m_Size;
+        const size_t newSize = m_Size + appendLength;
+
+        if (newSize <= S_MaxSmallCapacity)
+        {
+            std::memcpy(m_InlineBuffer + prevSize, pStr, appendLength);
+            m_Size = newSize;
+            return;
+        }
+        else if (newSize <= m_Capacity)
+        {
+            std::memcpy(mP_Str + prevSize, pStr, appendLength);
+            m_Size = newSize;
+            return;
+        }
+
+        const size_t minCapacity = newSize;
+        Resize(minCapacity);
+
+        const size_t offset = prevSize;
+        HeapCopyOffset(offset, pStr, appendLength);
+        m_Size = newSize;
+        mP_Str[newSize] = '\0';
+    }
+
+    void String::Resize(size_t newCapacity) noexcept
+    {
+        if (newCapacity <= m_Capacity)
+            return;
+
+        const size_t geometricGrowth = m_Size + (m_Size / 2);
+        newCapacity = std::max(geometricGrowth, newCapacity);
+
+        char* pNewStr = AllocCapacity(newCapacity);
+
+        if (IsSmall() && !Empty())
+            InlineCopyTo(pNewStr, newCapacity);
+        else if (mP_Str)
+        {
+            HeapCopyTo(pNewStr, newCapacity);
+            Dealloc();
+        }
+
+        const size_t prevSize = m_Size;
+
+        mP_Str = pNewStr;
+        m_Size = prevSize;
+        m_Capacity = newCapacity;
     }
 
     String::~String() noexcept
     {
-        Dealloc();
+        if (!IsSmall())
+            Dealloc();
     }
 
-    [[nodiscard]] String& String::operator=(const char* pString) noexcept
+    [[nodiscard]] char* String::AllocCapacity(size_t capacity) noexcept
     {
-        /* GOAL: Constructor allocates specific buffer and copies string.
-         *       Assignment allocates a growth factored buffer, then copies string.*/
-        return *this;
-    }
+        ASSERT(capacity > S_MaxSmallCapacity, "should be copied inline...");
 
-    [[nodiscard]] String& String::operator=(const String& other) noexcept
-    {
-        Copy(other);
-        return *this;
-    }
+        char* pStr = new char[capacity + 1];
 
-    [[nodiscard]] String& String::operator=(String&& other) noexcept
-    {
-        Steal(std::move(other));
-        return *this;
-    }
+        const size_t nullTermIndex = capacity;
+        pStr[nullTermIndex] = '\0';
 
-    void String::Resize(size_t size) noexcept
-    {
-        size_t geometric = m_Size + (m_Size / 2);
-
-        size_t newSize = std::max(size, geometric);
-
-        EnsureSize(newSize);
-    }
-
-    [[nodiscard]] bool String::Equals(const String& other) const noexcept
-    {
-        if ((IsNull() || other.IsNull()) ||
-            m_Size != other.Size())
-            return false;
-
-        for (size_t i = 0; i < m_Size; ++i)
-            if (AtUnchecked(i) != other.AtUnchecked(i))
-                return false;
-
-        return true;
-    }
-
-    [[nodiscard]] char& String::operator[](size_t index) noexcept
-    {
-        ASSERT(index < m_Size, "Out of bounds access.");
-        return mP_String[index];
-    }
-
-    [[nodiscard]] char String::operator[](size_t index) const noexcept
-    {
-        ASSERT(index < m_Size, "Out of bounds access.");
-        return mP_String[index];
-    }
-
-    void String::SetNullTerminator() noexcept
-    {
-        /* Ensure null terminator is present... */
-        const size_t nullTermIndex = m_Size;
-        mP_String[nullTermIndex] = '\0';
-    }
-
-    void String::Alloc(size_t size) noexcept
-    {
-        /* Account for null terminator... */
-        const size_t allocBytes = size + 1;
-
-        /* Allocate buffer. */
-        mP_String = new char[allocBytes];
-        m_Size = size;
+        return pStr;
     }
 
     void String::Dealloc() noexcept
     {
-        if (!mP_String)
-            return;
-        
-        delete mP_String;
+        ASSERT(!IsSmall(), "small active...");
 
-        mP_String = nullptr;
+        delete[] mP_Str;
+        mP_Str = nullptr;
         m_Size = 0;
+        m_Capacity = 0;
     }
 
-    void String::EnsureSize(size_t size) noexcept
+    void String::InlineCopy(const char* pStr, size_t length) noexcept
     {
-        if (size <= m_Size)
-            return;
+        ASSERT(IsSmall(), "non-small active...");
+        ASSERT(length < sizeof(m_InlineBuffer), "provided length overflows inline buffer...");
 
-        Dealloc();
-        Alloc(size);
+        std::memcpy(m_InlineBuffer, pStr, length);
+        m_InlineBuffer[length] = '\0';
+        m_Size = length;
     }
 
-    void String::Assign(const char* pString) noexcept
+    void String::InlineCopyTo(char* pDest, size_t destLength) const noexcept
     {
-        constexpr size_t MaximumSize = 1024;
-        size_t size = strnlen(pString, MaximumSize);
+        ASSERT(IsSmall(), "small should be active...");
+        ASSERT(destLength >= m_Size, "dest length doesn't suffice...");
 
-        EnsureSize(size);
-        CopyRaw(pString);
-    } 
-
-    void String::CopyRaw(const char* pString) noexcept
-    {
-        ASSERT(mP_String, "String is not allocated.");
-        ASSERT(pString, "Provided const char* is nullptr.");
-
-        std::memcpy(mP_String, pString, m_Size);
-        SetNullTerminator();
+        std::memcpy(pDest, m_InlineBuffer, m_Size);
     }
 
-    void String::Copy(const String& other) noexcept
+    void String::HeapCopy(const char* pStr, size_t length) noexcept
     {
-        Resize(other.Size());
-        CopyRaw(other.Data());
+        ASSERT(!IsSmall(), "small active...");
+        ASSERT(mP_Str, "should be allocated...");
+        ASSERT(length <= m_Capacity, "overflowed capacity...");
+
+        std::memcpy(mP_Str, pStr, length);
+        mP_Str[length] = '\0';
+        m_Size = length;
     }
 
-    void String::Steal(String&& other) noexcept
+    void String::HeapCopyOffset(size_t offset, const char* pStr, size_t length) noexcept
     {
-        mP_String = other.mP_String;
-        m_Size = other.m_Size;
+        ASSERT(!IsSmall(), "small active...");
+        ASSERT(mP_Str, "should be allocated...");
+        ASSERT(length <= m_Capacity, "overflowed capacity...");
+        ASSERT(offset <= m_Capacity, "offset overflowed capacity...");
 
-        other.mP_String = nullptr;
-        other.m_Size = 0;
+        char* pDest = mP_Str + offset;
+        std::memcpy(pDest, pStr, length);
+    }
+
+    void String::HeapCopyTo(char* pDest, size_t destLength) const noexcept
+    {
+        ASSERT(!IsSmall(), "small active...");
+        ASSERT(mP_Str, "should be allocated...");
+        ASSERT(destLength >= m_Size, "dest length doesn't suffice...");
+
+        std::memcpy(pDest, mP_Str, m_Size);
+    }
+
+    [[nodiscard]] const char* String::ActiveStorage() const noexcept
+    {
+        if (IsSmall())
+            return m_InlineBuffer;
+        
+        return mP_Str;
+    }
+
+    [[nodiscard]] bool String::IsSmall() const noexcept
+    {
+        return m_Capacity <= S_MaxSmallCapacity;
     }
 }

@@ -1,11 +1,9 @@
+#include "Backend/PlatformFailure.hpp"
 #include "Backend/Win32/Context_Win32.hpp"
-#include "Backend/Win32/D3D/_11/API_D3D11.hpp"
+#include "Backend/Win32/D3D/_11/Api_D3D11.hpp"
 #include "Common/Assert.hpp"
 #include "Common/Cast.hpp"
-#include "Common/RuntimeFailure.hpp"
 #include "ILogger.hpp"
-
-#define CONTEXT_FAILURE_IF(x, msg) RUNTIME_FAILURE_IF(x, msg, GetActiveLogger())
 
 namespace Platform::Backend::Win32
 {
@@ -39,7 +37,10 @@ namespace Platform::Backend::Win32
             return false;
         }
 
-        CONTEXT_FAILURE_IF(pOSWindowHandle == nullptr, "(Context_Win32) Wtf are you doing?!");
+        PLATFORM_FAILURE_IF(
+            pOSWindowHandle == nullptr,
+            "(Context_Win32) Wtf are you doing?!"
+        );
 
         ::HWND hWnd = Reinterpret<::HWND>(pOSWindowHandle);
 
@@ -58,8 +59,7 @@ namespace Platform::Backend::Win32
             CreateOpenGLApi();
             break;
         default:
-            CONTEXT_FAILURE_IF(true, "(Context_Win32) Unknown provided ApiType.");
-            return false;
+            PLATFORM_FAILURE("(Context_Win32) Unknown provided ApiType.");
         }
 
         return true;
@@ -67,7 +67,7 @@ namespace Platform::Backend::Win32
 
     [[nodiscard]] IApi& Context::GetApiInternal() noexcept
     {
-        CONTEXT_FAILURE_IF(
+        PLATFORM_FAILURE_IF(
             mP_Api.get() == nullptr,
             "(Context_Win32) Attempted to retrieve a reference to an instance of the graphics api before it was created."
         );
@@ -87,11 +87,11 @@ namespace Platform::Backend::Win32
 
     void Context::CreateDirect3D12Api() noexcept
     {
-        CONTEXT_FAILURE_IF(true, "(Context_Win32) Direct3D12 has yet to have been implemented.");
+        PLATFORM_FAILURE("(Context_Win32) Direct3D12 has yet to have been implemented.");
     }
 
     void Context::CreateOpenGLApi() noexcept
     {
-        CONTEXT_FAILURE_IF(true, "(Context_Win32) OpenGL has yet to have been implemented.");
+        PLATFORM_FAILURE("(Context_Win32) OpenGL has yet to have been implemented.");
     }
 }

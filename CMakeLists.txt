@@ -48,7 +48,7 @@ function(SetTargetProperties target target_output_dir)
 endfunction()
 
 function (SetCommon target target_output_dir)
-    target_compile_options(${target} PUBLIC ${COMMON_WARNINGS})
+    target_compile_options(${target} PUBLIC ${WARNINGS})
     target_compile_features(${target} PUBLIC cxx_std_20)
 
     target_compile_definitions(${target}
@@ -58,10 +58,18 @@ function (SetCommon target target_output_dir)
         PRIVATE $<$<CONFIG:RelWithDebInfo>:CONFIG_REL_DEBUG=1>
         PRIVATE $<$<NOT:$<CONFIG:Debug>>:CONFIG_RELEASE=1>
         PRIVATE $<$<CONFIG:MinSizeRel>:CONFIG_REL_MIN_SIZE=1 CONFIG_DIST=1>
+        PRIVATE CONFIG_SOURCE_DIR="${CMAKE_SOURCE_DIR}/"
+        PRIVATE CONFIG_SOURCE_DIRW="${CMAKE_SOURCE_DIR}/"
     )
+
+    if (WIN32)
+        target_compile_definitions(${target} PUBLIC CONFIG_PLATFORM_WINDOWS)
+    endif()
     
     SetTargetProperties(${target} ${target_output_dir})
 endfunction()
+
+add_subdirectory(vendor/efsw)
 
 add_subdirectory(Common)
 add_subdirectory(Platform)

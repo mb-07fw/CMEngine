@@ -6,89 +6,82 @@
 
 namespace Platform
 {
-    enum class PLATFORM_API Byte {};
+    using OpaquePtr = void*;
 
-    /* Provides a non-owning view onto an existing string.
-     * Used as a dll-boundary-safe substituiton for std::string_view. */
+    enum class PLATFORM_API Byte : uint8_t {};
+
     class PLATFORM_API StringView
     {
     public:
+        StringView(const char* pStr) noexcept;
+
         StringView() = default;
         ~StringView() = default;
 
-        StringView(const char* pString) noexcept;
-        StringView(const char* pString, size_t size) noexcept;
-
         StringView(const StringView&) = default;
         StringView(StringView&&) = default;
+        StringView& operator=(const StringView&) = default;
+        StringView& operator=(StringView&&) = default;
 
-        [[nodiscard]] StringView& operator=(const StringView&) = default;
-        [[nodiscard]] StringView& operator=(StringView&&) = default;
-
-        [[nodiscard]] bool operator==(const StringView&) const = default;
-    public:
-        inline [[nodiscard]] const char* Data() const noexcept { return mP_String; }
+        inline [[nodiscard]] const char* Data() const noexcept { return mP_Str; }
         inline [[nodiscard]] size_t Size() const noexcept { return m_Size; }
+        inline [[nodiscard]] bool Empty() const noexcept { return m_Size == 0; }
+        inline [[nodiscard]] bool Null() const noexcept { return !mP_Str; }
+
+        [[nodiscard]] bool operator==(const StringView& other) const noexcept;
     private:
-        const char* mP_String = nullptr;
-        size_t m_Size = 0; /* (does not include null terminator) */
+        const char* mP_Str = "";
+        size_t m_Size = 0;
     };
 
-    /* Provides an owning string implementation.
-     * Used as a dll-boundary-safe substituiton for std::string.
-     * Allocation and deallocation are performed by the Platform DLL,
-     *   therefore, it's buffer must never be freed by the client. */
     class PLATFORM_API String
     {
     public:
-        String() = default;
+        String(const char* pStr) noexcept;
+        String(const StringView& view) noexcept;
+
+        String() noexcept;
+        String(const String&) noexcept;
+        String(String&&) noexcept;
+        String& operator=(const String&) noexcept;
+        String& operator=(String&&) noexcept;
+
         ~String() noexcept;
 
-        explicit String(const char* pString) noexcept;
-        String(const StringView& view) noexcept;
-        String(const char* pString, size_t size) noexcept;
-        String(size_t initialSize, char initialChar = ' ') noexcept;
-        String(const String& other) noexcept;
-        String(String&& other) noexcept;
+        String& operator+=(const char* pStr) noexcept;
 
-        String& operator=(const char* pString) noexcept;
-        String& operator=(const String& other) noexcept;
-        String& operator=(String&& other) noexcept;
+        void Assign(const char* pStr, size_t length) noexcept;
+        void Assign(const String& other) noexcept;
+        void Assign(String&& other) noexcept;
 
-        [[nodiscard]] char& operator[](size_t index) noexcept;
-        [[nodiscard]] char operator[](size_t index) const noexcept;
+        void Append(const char* pStr) noexcept;
+        void Resize(size_t newCapacity) noexcept;
 
-        inline [[nodiscard]] bool operator==(const String& other) const noexcept { return Equals(other); }
-    public:
-        void Resize(size_t size) noexcept;
-        [[nodiscard]] bool Equals(const String& other) const noexcept;
-
-        inline [[nodiscard]] char* Data() const noexcept { return mP_String; }
+        inline [[nodiscard]] const char* Data() const noexcept { return ActiveStorage(); }
         inline [[nodiscard]] size_t Size() const noexcept { return m_Size; }
-
-        inline [[nodiscard]] char& AtUnchecked(size_t index) noexcept { return mP_String[index]; }
-        inline [[nodiscard]] char AtUnchecked(size_t index) const noexcept { return mP_String[index]; }
-
-        inline [[nodiscard]] bool IsNull() const noexcept { return !mP_String; }
-        inline [[nodiscard]] StringView View() const noexcept { return StringView(mP_String, m_Size); }
+        inline [[nodiscard]] size_t Capacity() const noexcept { return m_Capacity; }
+        inline [[nodiscard]] bool Empty() const noexcept { return m_Size == 0; }
     private:
-        void SetNullTerminator() noexcept;
-
-        void Alloc(size_t size) noexcept;
+        [[nodiscard]] char* AllocCapacity(size_t capacity) noexcept;
         void Dealloc() noexcept;
 
-        void EnsureSize(size_t size) noexcept;
+        void InlineCopy(const char* pStr, size_t length) noexcept;
+        void InlineCopyTo(char* pDest, size_t destLength) const noexcept;
+        void HeapCopy(const char* pStr, size_t length) noexcept;
+        void HeapCopyOffset(size_t offset, const char* pStr, size_t length) noexcept;
+        void HeapCopyTo(char* pDest, size_t destLength) const noexcept;
 
-        /* Allocates a buffer and copies the provided c-string's contents into it. */
-        void Assign(const char* pString) noexcept;
+        [[nodiscard]] const char* ActiveStorage() const noexcept;
 
-        /* Copies the provided c-string's contents into the previously allocated buffer. */
-        void CopyRaw(const char* pString) noexcept;
-
-        void Copy(const String& other) noexcept;
-        void Steal(String&& other) noexcept;
+        [[nodiscard]] bool IsSmall() const noexcept;
     private:
-        char* mP_String = nullptr;
-        size_t m_Size = 0; /* (does not include null terminator) */
+        union
+        {
+            char* mP_Str;
+            char m_InlineBuffer[16] = { '\0' };
+        };
+        static constexpr size_t S_MaxSmallCapacity = sizeof(m_InlineBuffer) - 1;
+        size_t m_Size = 0;
+        size_t m_Capacity = S_MaxSmallCapacity;
     };
 }

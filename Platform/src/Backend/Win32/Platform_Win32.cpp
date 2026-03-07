@@ -4,20 +4,81 @@
 #include "Backend/Win32/PlatformOS_Win32.hpp"
 #include "Backend/Win32/D3D/_11/Api_D3D11.hpp"
 #include "Common/Assert.hpp"
+#include "efsw/efsw.hpp"
 
 #include <functional>
 #include <iostream>
+#include <memory>
 #include <string_view>
 
 namespace Platform::Backend::Win32
 {
+    // Inherits from the abstract listener class, and implements the the file action handler
+    class UpdateListener : public efsw::FileWatchListener
+    {
+    public:
+        void handleFileAction(
+            efsw::WatchID watchid,
+            const std::string& dir,
+            const std::string& filename, 
+            efsw::Action action,
+            std::string oldFilename
+        ) noexcept override
+        {
+            if (filename == "test.txt")
+                std::cout << "Ayyyyy target!!!!!!!\n";
+
+            switch (action)
+            {
+            case efsw::Actions::Add:
+                std::cout << "ID (" << watchid << ") DIR(" << dir << ") FILE(" << filename << ") has event Added"
+                    << std::endl;
+                break;
+            case efsw::Actions::Delete:
+                std::cout << "DIR (" << dir << ") FILE (" << filename << ") has event Delete"
+                    << std::endl;
+                break;
+            case efsw::Actions::Modified:
+                std::cout << "DIR (" << dir << ") FILE (" << filename << ") has event Modified"
+                    << std::endl;
+                break;
+            case efsw::Actions::Moved:
+                std::cout << "DIR (" << dir << ") FILE (" << filename << ") has event Moved from ("
+                    << oldFilename << ")" << std::endl;
+                break;
+            default:
+                std::cout << "File event should never happen!" << std::endl;
+            }
+        }
+    };
+
     struct Platform::Impl
     {
-        Impl() = default;
-        ~Impl() = default;
+        Impl()
+        {
+            pFileWatcher = std::make_unique<efsw::FileWatcher>();
+            pListener = std::make_unique<UpdateListener>();
+            TestID = pFileWatcher->addWatch(CONFIG_SOURCE_DIR "test", pListener.get(), false);
+
+            PLATFORM_FAILURE_IF_V(
+                !TestID,
+                "Failed to watch dir; Error: {}", TestID
+            );
+
+            // Start watching asynchronously the directories
+            pFileWatcher->watch();
+        }
+
+        ~Impl() noexcept
+        {
+            pFileWatcher->removeWatch(TestID);
+        }
 
         Win32::Window Window;
         Win32::Context Context;
+        std::unique_ptr<efsw::FileWatcher> pFileWatcher;
+        std::unique_ptr<UpdateListener> pListener;
+        efsw::WatchID TestID;
     };
 
     Platform::Platform() noexcept

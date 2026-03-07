@@ -109,6 +109,7 @@ namespace Platform
 		InputElement& operator=(InputElement&&) = default;
 		 
 		String Name; // Semantic name
+
 		uint32_t Index = 0; // Semantic index
 		DataFormat Format = DataFormat::Unspecified;
 		uint32_t InputSlot = 0; // Vertex buffer slot that data will be present in.
@@ -123,8 +124,6 @@ namespace Platform
 		uint32_t InstanceStepRate = 0;
 	};
 #pragma endregion
-
-	using OpaquePtr = void*;
 
 	enum class PLATFORM_API ShaderType : uint8_t
 	{

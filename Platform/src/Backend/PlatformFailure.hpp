@@ -1,7 +1,6 @@
 #pragma once
 
-#include "IPlatform.hpp"
-#include "Common/RuntimeFailure.hpp"
+#include "RuntimeFailure.hpp"
 
 #define PLATFORM_FAILURE(msg)				  RUNTIME_FAILURE(msg, GetActiveLogger())
 #define PLATFORM_FAILURE_V(fmt, ...)		  RUNTIME_FAILURE_V(GetActiveLogger(), fmt, __VA_ARGS__)
