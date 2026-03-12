@@ -22,22 +22,22 @@ namespace Engine::Asset
 	enum class AssetType : uint8_t
 	{
 		Invalid,
-		Model, /* Overarching owner of any subsequent meshes / materials. */
-		Mesh,
 		Material,
-		Texture,
-		Shader
+		Mesh,
+		Model, /* Overarching owner of any subsequent meshes / materials. */
+		Shader,
+		Texture
 	};
 
 	inline constexpr [[nodiscard]] bool IsValidAssetType(AssetType type) noexcept
 	{
 		switch (type)
 		{
-		case AssetType::Model: [[fallthrough]];
-		case AssetType::Mesh: [[fallthrough]];
 		case AssetType::Material: [[fallthrough]];
+		case AssetType::Mesh: [[fallthrough]];
+		case AssetType::Model: [[fallthrough]];
+		case AssetType::Shader: [[fallthrough]];
 		case AssetType::Texture: [[fallthrough]];
-		case AssetType::Shader:
 			return true;
 		case AssetType::Invalid: [[fallthrough]];
 		default:

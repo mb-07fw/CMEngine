@@ -1,1 +1,20 @@
 tetasgasersfaefwad
+
+* VS safe-saving:
+*   add temporary file
+*   save to temporary file
+*   add another temporary file (why?)
+*   delete the extra temp file (again, why add it in the first place?)
+*   rename original file to the extra temp file (thats already been deleted?)
+*   rename saved temp to original file 
+*   delete the extra temp file (already been deleted?)
+*   (do we not delete the original temp?)
+
+ID (1) DIR(C:/other/dev/projects/cpp/CMEngine/test\) FILE(fnnoixkx.kov~) has event Added
+DIR (C:/other/dev/projects/cpp/CMEngine/test\) FILE (fnnoixkx.kov~) has event Modified
+ID (1) DIR(C:/other/dev/projects/cpp/CMEngine/test\) FILE(test.txt~RF421e0df3.TMP) has event Added
+DIR (C:/other/dev/projects/cpp/CMEngine/test\) FILE (test.txt~RF421e0df3.TMP) has event Delete
+DIR (C:/other/dev/projects/cpp/CMEngine/test\) FILE (test.txt~RF421e0df3.TMP) has event Moved from (test.txt)
+DIR (C:/other/dev/projects/cpp/CMEngine/test\) FILE (test.txt) has event Moved from (fnnoixkx.kov~)
+DIR (C:/other/dev/projects/cpp/CMEngine/test\) FILE (test.txt) has event Modified
+DIR (C:/other/dev/projects/cpp/CMEngine/test\) FILE (test.txt~RF421e0df3.TMP) has event Delete

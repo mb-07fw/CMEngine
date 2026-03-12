@@ -38,12 +38,12 @@ inline [[nodiscard]] Ty& ViewBasic<Ty>::Ref()
 	return *Raw();
 }
 
-/* View represents a non-onwing pointer to a resource that is NOT meant
+/* View represents a non-owning pointer to a resource that is NOT meant
  *   to be deleted by the client. */
 template <typename Ty>
 using View = ViewBasic<Ty>;
 
-/* ConstView represents a non-onwing pointer to a const resource that is NOT meant
+/* ConstView represents a non-owning pointer to a const resource that is NOT meant
  *   to be deleted by the client. */
 template <typename Ty>
 struct ConstView : public ViewBasic<const Ty>

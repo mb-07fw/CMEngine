@@ -3,10 +3,6 @@
 #include <fstream>
 #include <system_error>
 
-//#include "PCH.hpp"
-//#include "Macros.hpp"
-//#include "Log.hpp"
-
 namespace Engine::Asset
 {
 	AssetManager::AssetManager() noexcept
@@ -17,20 +13,57 @@ namespace Engine::Asset
 	{
 	}
 
-	[[nodiscard]] AssetID AssetManager::LoadShader(
+	void AssetManager::Update() noexcept
+	{
+
+	}
+
+	[[nodiscard]] AssetID AssetManager::LoadAsset(
+		AssetType type,
 		const std::filesystem::path& filePath,
 		View<Result> optOutResult
+	) noexcept
+	{
+		std::filesystem::path canonPath = std::filesystem::weakly_canonical(filePath);
+
+		switch (type)
+		{
+		case AssetType::Material:
+			break;
+		case AssetType::Mesh:
+			break;
+		case AssetType::Model:
+			break;
+		case AssetType::Shader:
+			return LoadShader(filePath, optOutResult);
+			break;
+		case AssetType::Texture:
+		case AssetType::Invalid: [[fallthrough]];
+			break;
+		}
+
+		return AssetID::Invalid();
+	}
+
+	[[nodiscard]] Result AssetManager::SetWatch(
+		AssetID id,
+		WatchProtocol protocol,
+		const std::function<void(const Asset* pUpdated)> onUpdateFunc
+	) noexcept
+	{
+		/* TODO: @pUpdated should represent the up-to-date (modified) asset. (reload, then notify, in Update) */
+	}
+
+	[[nodiscard]] bool AssetManager::LoadFileRaw(
+		const std::filesystem::path& filePath,
+		std::vector<char>& outFileBuffer,
+		View<Result>& optOutResult
 	) noexcept
 	{
 		if (!std::filesystem::exists(filePath))
 		{
 			SetResultIfValid(optOutResult, ResultType::Failed_File_Absent);
-			return AssetID();
-		}
-		else if (filePath.extension() != ".hlsl")
-		{
-			SetResultIfValid(optOutResult, ResultType::Failed_File_Import_Invalid_Format);
-			return AssetID();
+			return false;
 		}
 
 		std::vector<char> fileBuffer;
@@ -41,7 +74,7 @@ namespace Engine::Asset
 		if (ec)
 		{
 			SetResultIfValid(optOutResult, ResultType::Failed_File_Import);
-			return AssetID();
+			return false;
 		}
 
 		fileBuffer.resize(fileSizeBytes);
@@ -50,7 +83,7 @@ namespace Engine::Asset
 		if (!stream)
 		{
 			SetResultIfValid(optOutResult, ResultType::Failed_File_Import);
-			return AssetID();
+			return false;
 		}
 
 		stream.read(fileBuffer.data(), fileBuffer.size());
@@ -58,12 +91,32 @@ namespace Engine::Asset
 		if (!stream)
 		{
 			SetResultIfValid(optOutResult, ResultType::Failed_File_Import);
-			return AssetID();
+			return false;
 		}
+
+		SetResultIfValid(optOutResult, ResultType::Succeeded);
+		return true;
+	}
+
+	[[nodiscard]] AssetID AssetManager::LoadShader(
+		const std::filesystem::path& filePath,
+		View<Result>& optOutResult
+	) noexcept
+	{
+		if (filePath.extension() != ".hlsl") /* TODO: Support multiple formats... */
+		{
+			SetResultIfValid(optOutResult, ResultType::Failed_File_Import_Invalid_Format);
+			return AssetID::Invalid();
+		}
+
+		std::vector<char> fileBuffer;
+		if (!LoadFileRaw(filePath, fileBuffer, optOutResult)) /* Assumed result type is set... */
+			return AssetID::Invalid();
 
 		AssetID id = AssetID(AssetType::Shader, NextGlobalID());
 		id.SetRegistered(true);
 
+		/* Create shader asset... */
 		Shader& shader = m_ShaderMap[id];
 		shader.ID = id;
 		shader.RawData = std::move(fileBuffer);
@@ -90,11 +143,12 @@ namespace Engine::Asset
 	{
 		switch (id.Type())
 		{
-		case AssetType::Mesh: [[fallthrough]];
-			//return m_MeshMap.contains(id);
-		case AssetType::Invalid: [[fallthrough]];
 		case AssetType::Material: [[fallthrough]];
+		case AssetType::Mesh: [[fallthrough]];
+		case AssetType::Model: [[fallthrough]];
+		case AssetType::Shader: [[fallthrough]];
 		case AssetType::Texture: [[fallthrough]];
+		case AssetType::Invalid: [[fallthrough]];
 		default:
 			return false;
 		}
@@ -118,19 +172,19 @@ namespace Engine::Asset
 
 		outHandle.SetRegistered(false);
 
-		switch (outHandle.Type())
-		{
-		case AssetType::Mesh:
-			/*if (auto it = m_MeshMap.find(outHandle); it != m_MeshMap.end())
-				m_MeshMap.erase(it);
+		//switch (outHandle.Type())
+		//{
+		//case AssetType::Mesh:
+		//	/*if (auto it = m_MeshMap.find(outHandle); it != m_MeshMap.end())
+		//		m_MeshMap.erase(it);
 
-			break;*/
-		case AssetType::Material: /* TODO: Implement later... */
-		case AssetType::Texture: /* TODO: Implement later... */
-			break;
-		default:
-			return;
-		}
+		//	break;*/
+		//case AssetType::Material: /* TODO: Implement later... */
+		//case AssetType::Texture: /* TODO: Implement later... */
+		//	break;
+		//default:
+		//	return;
+		//}
 
 		m_FreeGlobalIDs.emplace_back(outHandle.GlobalID());
 	}

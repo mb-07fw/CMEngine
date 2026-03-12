@@ -10,6 +10,8 @@ set(Src_Files
     "src/Asset/Asset.hpp"
     "src/Asset/AssetManager.cpp"
     "src/Asset/AssetManager.hpp"
+    "src/Asset/FileWatcher.cpp"
+    "src/Asset/FileWatcher.hpp"
 )
 
 set(Inc_Files
@@ -25,6 +27,7 @@ target_link_libraries(Engine PUBLIC Platform)
 target_include_directories(Engine PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    "${CMAKE_SOURCE_DIR}/vendor/efsw/include"
 )
 
 target_compile_definitions(Engine PUBLIC 
