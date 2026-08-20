@@ -49,4 +49,10 @@ Side note: Instead of using CMake to generate a .sln file for Visual Studio, I'd
 Visual Studio's native CMake integration by right-clicking on the project's root folder and clicking *"Open With Visual Studio"*.
 
 ## Latest Screenshot
+
+This screenshot shows the editor's scene that includes a camera fixed toward the world origin 
+with two objects near it, and a GUI object to track the scene's current objects, which can also
+be transformed through the GUI.
+The camera can be moved using conventional locomotion keys WASD.
+
 ![Latest Screenshot](https://github.com/mb-07fw/CMRenderer/blob/main/screenshots/2025-12-24-(initial_event_system).png)
